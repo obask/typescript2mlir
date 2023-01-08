@@ -1,5 +1,7 @@
-import ts, { SortedReadonlyArray, SyntaxKind } from "typescript";
-
+import * as ts from "typescript";
+export function lowerFirstLetter(string) {
+    return string.charAt(0).toLowerCase() + string.slice(1);
+}
     /**
      * Formats an enum value as a string for debugging and debug assertions.
      */
@@ -61,7 +63,7 @@ import ts, { SortedReadonlyArray, SyntaxKind } from "typescript";
 
 
 
-export function formatSyntaxKind(kind: SyntaxKind | undefined): string {
+export function formatSyntaxKind(kind: ts.SyntaxKind | undefined): string {
     return formatEnum(kind, (ts as any).SyntaxKind, /*isFlags*/ false);
 }
 

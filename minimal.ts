@@ -1,7 +1,38 @@
-import type { SourceFile, TextRange, TransformerFactory, TypeChecker, Node, Printer } from "typescript"
-import ts from "typescript"
-import TS_CONFIG from "./config"
-import { formatSyntaxKind } from "./debug/kind"
+import type {CompilerOptions, Node, Printer, SourceFile, TextRange, TransformerFactory, TypeChecker,} from "typescript";
+import * as pkg from "typescript";
+import {formatSyntaxKind, lowerFirstLetter} from "./debug/kind"
+import {BasicBlock, Operator, Region} from "./mlir/model"
+import * as console from "console";
+
+const {
+    createPrinter,
+    createProgram,
+    EmitHint,
+    JsxEmit,
+    ModuleKind,
+    ModuleResolutionKind,
+
+    ScriptTarget,
+
+} = pkg;
+
+
+const TS_CONFIG = {
+    baseUrl: __dirname,
+    target: ScriptTarget.ESNext,
+    project: ".",
+    module: ModuleKind.ESNext,
+    outDir: "delme",
+    allowSyntheticDefaultImports: true,
+    esModuleInterop: true,
+    moduleResolution: ModuleResolutionKind.NodeNext,
+    strict: true,
+    types: ["vite/client"],
+    paths: {
+        "~/*": ["./assets/*"]
+    }
+} as CompilerOptions
+
 
 export function positionIsSynthesized(pos: number): boolean {
     return !(pos >= 0);
@@ -13,7 +44,7 @@ export function nodeIsSynthesized(range: TextRange): boolean {
 }
 
 
-const PATH = "../solid-start-barebone/src/components/Counter.tsx"
+const PATH = "./assets/main.ts"
 
 // class TsOperator extends Operator implements {}
 
@@ -22,7 +53,7 @@ class MyVisitor {
     sourceFile: SourceFile
     checker: TypeChecker
     stack: Operator[][] = [[]]
-    printer: Printer = ts.createPrinter()
+    printer: Printer = createPrinter()
 
     constructor(sourceFile: SourceFile, checker: TypeChecker) {
         this.sourceFile = sourceFile
@@ -30,13 +61,13 @@ class MyVisitor {
     }
 
     public visit(node: Node): Operator | undefined {
-        const x = this.printer.printNode(ts.EmitHint.Unspecified, node, this.sourceFile)
+        const x = this.printer.printNode(EmitHint.Unspecified, node, this.sourceFile)
         console.log(x)
         const tt = node.parent && this.checker.typeToString(this.checker.getTypeAtLocation(node))
         console.log("t:", tt)
         const op = new Operator()
         op.dialect = "ts"
-        op.name = formatSyntaxKind(node.kind)
+        op.name = lowerFirstLetter(formatSyntaxKind(node.kind))
         const bb = new BasicBlock()
         const rr = new Region()
         rr.blocks = [bb]
@@ -49,14 +80,16 @@ class MyVisitor {
     }
 }
 
+let result: Operator
 
 function simpleTransformer<T extends Node>(sourceFile: SourceFile, checker: TypeChecker): TransformerFactory<T> {
 
     const mv = new MyVisitor(sourceFile, checker)
 
+
     return (context) => {
         return (node) => {
-            mv.visit(node)
+            result = mv.visit(node)
             return node
         }
     }
@@ -68,7 +101,7 @@ function simpleTransformer<T extends Node>(sourceFile: SourceFile, checker: Type
 function compile(): void {
     // ts.transpileModule
 
-    let program = ts.createProgram([PATH], TS_CONFIG)
+    let program = createProgram([PATH], TS_CONFIG)
 
     let checker = program.getTypeChecker()
 
@@ -80,6 +113,13 @@ function compile(): void {
     })
 
     // program.emit()
+
+    console.log(result)
+    console.log("==============")
+    for (const op of result.regions[0].blocks[0].operators) {
+        console.log(op)
+    }
+
 
     console.log("DONE")
 

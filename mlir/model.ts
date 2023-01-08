@@ -1,6 +1,6 @@
 interface RootElement {}
 
-class Operator implements RootElement {
+export class Operator implements RootElement {
     returnNames: Set<ValueId> = new Set();
     dialect!: string;
     name!: string;
@@ -12,7 +12,7 @@ class Operator implements RootElement {
     successors: BlockLabel[] = [];
 }
 
-class BlockId {
+export class BlockId {
     value: string;
     constructor(value: string) {
         this.value = value;
@@ -22,7 +22,7 @@ class BlockId {
     }
 }
 
-class BlockLabel implements RootElement {
+export class BlockLabel implements RootElement {
     name: BlockId;
     params: Array<[ValueId, KotlinType]> = [];
     constructor(name: BlockId, params: Array<[ValueId, KotlinType]> = []) {
@@ -31,17 +31,17 @@ class BlockLabel implements RootElement {
     }
 }
 
-class BasicBlock implements RootElement {
+export class BasicBlock implements RootElement {
     operators: Operator[] = [new Operator()];
     label?: BlockLabel;
 }
 
-class Region implements RootElement {
+export class Region implements RootElement {
     blocks: BasicBlock[] = [new BasicBlock()];
     storeCounter!: Map<string, number>;
 }
 
-class KotlinType {
+export class KotlinType {
     type: string;
     constructor(type: string) {
         this.type = type;
@@ -51,7 +51,7 @@ class KotlinType {
     }
 }
 
-class BuiltinTypeI1 extends KotlinType {
+export class BuiltinTypeI1 extends KotlinType {
     constructor() {
         super("i1");
     }
@@ -60,7 +60,7 @@ class BuiltinTypeI1 extends KotlinType {
     }
 }
 
-class ValueId {
+export class ValueId {
     name: string;
     constructor(name: string) {
         this.name = name;
@@ -72,7 +72,7 @@ class ValueId {
 
 interface Attribute extends RootElement {}
 
-class FunctionTypeAttr implements Attribute {
+export class FunctionTypeAttr implements Attribute {
     types: KotlinType[];
     returnType: KotlinType;
     constructor(types: KotlinType[], returnType: KotlinType) {
@@ -85,7 +85,7 @@ class FunctionTypeAttr implements Attribute {
     }
 }
 
-class OperandSegmentSizesAttr implements Attribute {
+export class OperandSegmentSizesAttr implements Attribute {
     argCounts: number[];
     constructor(argCounts: number[]) {
         this.argCounts = argCounts;
@@ -96,7 +96,7 @@ class OperandSegmentSizesAttr implements Attribute {
     }
 }
 
-class IntAttr implements Attribute {
+export class IntAttr implements Attribute {
     item: number;
     constructor(item: number) {
         this.item = item;
@@ -106,7 +106,7 @@ class IntAttr implements Attribute {
     }
 }
 
-class FloatAttr implements Attribute {
+export class FloatAttr implements Attribute {
     value: number;
     constructor(value: number) {
         this.value = value;
@@ -116,7 +116,7 @@ class FloatAttr implements Attribute {
     }
 }
 
-class StringAttr implements Attribute {
+export class StringAttr implements Attribute {
     value: string;
     constructor(value: string) {
         this.value = value;
@@ -126,7 +126,7 @@ class StringAttr implements Attribute {
     }
 }
 
-class ReferenceAttr implements Attribute {
+export class ReferenceAttr implements Attribute {
     value: string;
     constructor(value: string) {
         this.value = value;
