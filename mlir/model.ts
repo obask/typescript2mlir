@@ -1,12 +1,16 @@
 interface RootElement {}
 
+type Dict<K extends string, V> = {
+    [k: string]: V;
+}
+
 export class Operator implements RootElement {
     returnNames: Set<ValueId> = new Set();
     dialect!: string;
     name!: string;
     operands: ValueId[] = [];
     regions: Region[] = [];
-    attributes: Map<string, Attribute> = new Map();
+    attributes: Dict<string, Attribute> = {};
     argumentTypes: KotlinType[] = [];
     resultTypes: KotlinType[] = [];
     successors: BlockLabel[] = [];
@@ -32,7 +36,7 @@ export class BlockLabel implements RootElement {
 }
 
 export class BasicBlock implements RootElement {
-    operators: Operator[] = [new Operator()];
+    operators: Operator[] = [];
     label?: BlockLabel;
 }
 

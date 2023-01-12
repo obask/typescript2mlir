@@ -7,5 +7,6 @@
 	},
 	"dependencies": {
 		"solid-js": "^1.6.8"
-	}
+	},
+	"index": "minimal.ts"
 }

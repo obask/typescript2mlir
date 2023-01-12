@@ -1,4 +1,6 @@
-class DefaultPrinter {
+import {BasicBlock, BlockLabel, Operator, Region} from "./model";
+
+export class DefaultPrinter {
     output: string[]
 
     constructor() {
@@ -17,43 +19,44 @@ class DefaultPrinter {
         this.output.push((s || "") + "\n")
     }
 
-    renderOperator(self, indent = "") {
-        if (self.type == 'Func.CallOp') {
-            const operands1 = self.operands.join(", ")
+    renderOperator(operator: Operator, indent = ""): string[] {
+        if (operator.name == 'Func.CallOp') {
+            const operands1 = operator.operands.join(", ")
             this.write(indent)
-            if (self.returnNames.length !== 0) {
-                this.write(self.returnNames.join(", ") + " = ")
+            if (operator.returnNames.size !== 0) {
+                this.write(Array.from(operator.returnNames).join(", ") + " = ")
             }
-            this.write(`func.call ${self.attributes["callee"]}(${operands1}) `)
-            self.renderType()
-            return self.sb
+            this.write(`func.call ${operator.attributes["callee"]}(${operands1}) `)
+            this.renderType(operator)
+            return this.output
         }
-        const operands1 = self.operands.join(", ")
+        const operands1 = operator.operands.join(", ")
         this.write(indent)
-        if (self.returnNames.length !== 0) {
-            this.write(self.returnNames.join(", ") + " = ")
+        if (operator.returnNames.size !== 0) {
+            this.write(Array.from(operator.returnNames).join(", ") + " = ")
         }
-        this.write(`"${self.dialect}.${self.name}"(${operands1}) `)
-        if (self.successors.length !== 0) {
-            const successorsString = self.successors.join(", ", bl => {
+        this.write(`"${operator.dialect}.${operator.name}"(${operands1}) `)
+        if (operator.successors.length !== 0) {
+            const successorsString = operator.successors.map((bl: BlockLabel) => {
                 if (bl.params.length === 0) {
-                    return bl.name.toString()
+                    bl.name.toString()
                 } else {
-                    const tmp = bl.params.map((it) => {
-                        `${it.first}: ${it.second}`
-                    }).join(", ")
-                    return `${bl.name}(${tmp})`
+                    // throw new Error("not implemented")
+                    const tmp = bl.params.map(([first, second]) => {
+                        `${first}: ${second}`
+                    }).join(", ");
+                    `${bl.name}(${tmp})`
                 }
-            })
+            }).join(", ")
             this.write(`[${successorsString}] `)
         }
-        self.regions.renderRegions(indent)
-        const attributes1 = Object.entries(self.attributes).map(([k, v]) => [k, v.toString()])
+        this.renderRegions(operator.regions, indent)
+        const attributes1 = Object.entries(operator.attributes).map(([k, v]) => `${k} = ${v.toString()}`)
         if (attributes1.length !== 0) {
-            this.write(`${attributes1} `)
+            this.write(`[${attributes1.join(", ")}] `)
         }
-        self.renderType()
-        return self.sb
+        this.renderType(operator)
+        return this.output
     }
 
     renderType(self) {
@@ -82,12 +85,11 @@ class DefaultPrinter {
         }
     }
 
-    renderRegions(self, indent) {
-        if (self.length !== 0) {
-            this.writeLine("(")
+    renderRegions(regions, indent) {
+        if (regions.length !== 0) {
+            this.write("(")
             let isFirst = true
-            for (let i = 0; i < self.length; i++) {
-                const region = this[i]
+            for (const region of regions) {
                 if (isFirst) {
                     isFirst = false
                 } else {
@@ -99,18 +101,29 @@ class DefaultPrinter {
         }
     }
 
-    renderRegionToSB(self, indent) {
+    renderRegionToSB(region: Region, indent) {
         this.writeLine("{")
-        for (const block of self.blocks) {
-            this.write(`${indent}  %${block.name} = ${block.type} `)
-            block.operations.renderToSB(`${indent}  `)
-            this.writeLine()
-        }
-        this.write(indent + "}")
+        region.blocks.map((block, i) => {
+            this.renderBlockToSB(block, `${indent}  `)
+            if (i < region.blocks.length - 1) {
+                this.writeLine()
+            }
+        })
+        this.write(`${indent}}`)
     }
 
-    renderBasicBlockToSB(self, indent) {
-        self.operations.renderToSB(indent)
-        self.operations.appendLine()
+    renderBlockToSB(block: BasicBlock, indent) {
+        if (block.label) {
+            this.renderLabelToSB(block.label)
+        }
+        for (const op of block.operators) {
+            this.renderOperator(op, `${indent}  `)
+            this.writeLine()
+        }
     }
+
+    renderLabelToSB(label: BlockLabel) {
+        // this.write(`${indent}  %${block.label.name} = ${block.label.params} `)
+    }
+
 }
