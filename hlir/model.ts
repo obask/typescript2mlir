@@ -8,12 +8,11 @@ export class Operator implements RootElement {
     returnNames: Set<ValueId> = new Set();
     dialect!: string;
     name!: string;
-    operands: ValueId[] = [];
-    regions: Region[] = [];
+    arguments: ValueId[] = [];
+    blocks: Block[] = [];
     attributes: Dict<string, Attribute> = {};
     argumentTypes: KotlinType[] = [];
-    resultTypes: KotlinType[] = [];
-    successors: BlockLabel[] = [];
+    returnTypes: KotlinType[] = [];
 }
 
 export class BlockId {
@@ -35,14 +34,9 @@ export class BlockLabel implements RootElement {
     }
 }
 
-export class BasicBlock implements RootElement {
+export class Block implements RootElement {
     operators: Operator[] = [];
     label?: BlockLabel;
-}
-
-export class Region implements RootElement {
-    blocks: BasicBlock[] = [new BasicBlock()];
-    storeCounter!: Map<string, number>;
 }
 
 export class KotlinType {

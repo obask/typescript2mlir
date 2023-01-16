@@ -1,4 +1,4 @@
-import {BasicBlock, BlockLabel, Operator, Region} from "./model";
+import {Block, BlockLabel, Operator} from "./model";
 
 export class DefaultPrinter {
     output: string[]
@@ -21,36 +21,14 @@ export class DefaultPrinter {
 
     renderOperator(operator: Operator, indent = ""): string[] {
         if (operator.name == 'Func.CallOp') {
-            const operands1 = operator.operands.join(", ")
-            this.write(indent)
-            if (operator.returnNames.size !== 0) {
-                this.write(Array.from(operator.returnNames).join(", ") + " = ")
-            }
+            const operands1 = this.renderReturnNames(operator, indent);
             this.write(`func.call ${operator.attributes["callee"]}(${operands1}) `)
             this.renderType(operator)
             return this.output
         }
-        const operands1 = operator.operands.join(", ")
-        this.write(indent)
-        if (operator.returnNames.size !== 0) {
-            this.write(Array.from(operator.returnNames).join(", ") + " = ")
-        }
+        const operands1 = this.renderReturnNames(operator, indent);
         this.write(`"${operator.dialect}.${operator.name}"(${operands1}) `)
-        if (operator.successors.length !== 0) {
-            const successorsString = operator.successors.map((bl: BlockLabel) => {
-                if (bl.params.length === 0) {
-                    bl.name.toString()
-                } else {
-                    // throw new Error("not implemented")
-                    const tmp = bl.params.map(([first, second]) => {
-                        `${first}: ${second}`
-                    }).join(", ");
-                    `${bl.name}(${tmp})`
-                }
-            }).join(", ")
-            this.write(`[${successorsString}] `)
-        }
-        this.renderRegions(operator.regions, indent)
+        this.renderRegions(operator.blocks, indent)
         const attributes1 = Object.entries(operator.attributes).map(([k, v]) => `${k} = ${v.toString()}`)
         if (attributes1.length !== 0) {
             this.write(`[${attributes1.join(", ")}] `)
@@ -59,29 +37,38 @@ export class DefaultPrinter {
         return this.output
     }
 
-    renderType(self) {
+    private renderReturnNames(operator: Operator, indent: string) {
+        const operands1 = operator.arguments.map(a => a.name).join(", ")
+        this.write(indent)
+        if (operator.returnNames.size) {
+            this.write(Array.from(operator.returnNames).map(a => a.toString()).join(", ") + " = ")
+        }
+        return operands1;
+    }
+
+    renderType(self: Operator) {
         let operandTypes: string
         if (self.dialect === "scf" && self.name === "if") {
             operandTypes = "i1"
         } else if (self.dialect === "cf" && self.name === "cond_br") {
-            if (self.operands.length === 1) {
+            if (self.arguments.length === 1) {
                 operandTypes = "i1"
             } else {
-                operandTypes = `i1, ${self.operands.slice(1, self.operands.length).join(", ")}`
+                operandTypes = `i1, ${self.arguments.slice(1, self.arguments.length).join(", ")}`
             }
         } else if (self.dialect === "scf" && self.name === "condition") {
-            operandTypes = `i1, ${self.operands.slice(1, self.operands.length).join(", ")}`
+            operandTypes = `i1, ${self.arguments.slice(1, self.arguments.length).join(", ")}`
         } else {
-            operandTypes = self.operands.map(() => {
+            operandTypes = self.arguments.map(() => {
                 "!_.Any"
             }).join(", ")
         }
-        if (self.returnNames.length === 0) {
+        if (self.returnNames.size === 0) {
 
-        } else if (self.returnNames.length === 1) {
-            this.write(`: (${operandTypes}) -> ${self.resultTypes.join(", ")}`)
+        } else if (self.returnNames.size === 1) {
+            this.write(`: (${operandTypes}) -> ${self.returnTypes.join(", ")}`)
         } else {
-            this.write(`: (${operandTypes}) -> (${self.resultTypes.join(", ")})`)
+            this.write(`: (${operandTypes}) -> (${self.returnTypes.join(", ")})`)
         }
     }
 
@@ -95,24 +82,14 @@ export class DefaultPrinter {
                 } else {
                     this.write(", ")
                 }
-                this.renderRegionToSB(region, indent)
+                this.renderBlockToSB(region, indent)
             }
             this.write(") ")
         }
     }
 
-    renderRegionToSB(region: Region, indent) {
+    renderBlockToSB(block: Block, indent) {
         this.writeLine("{")
-        region.blocks.map((block, i) => {
-            this.renderBlockToSB(block, `${indent}  `)
-            if (i < region.blocks.length - 1) {
-                this.writeLine()
-            }
-        })
-        this.write(`${indent}}`)
-    }
-
-    renderBlockToSB(block: BasicBlock, indent) {
         if (block.label) {
             this.renderLabelToSB(block.label)
         }
@@ -120,6 +97,7 @@ export class DefaultPrinter {
             this.renderOperator(op, `${indent}  `)
             this.writeLine()
         }
+        this.write(`${indent}}`)
     }
 
     renderLabelToSB(label: BlockLabel) {

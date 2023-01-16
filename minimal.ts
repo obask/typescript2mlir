@@ -9,9 +9,9 @@ import type {
 } from "typescript";
 import * as pkg from "typescript";
 import {formatSyntaxKind, lowerFirstLetter} from "./debug/kind"
-import {BasicBlock, Operator, Region} from "./mlir/model"
+import {Block, Operator, ValueId} from "./hlir/model"
 import * as console from "console";
-import {DefaultPrinter} from "./mlir/printer";
+import {DefaultPrinter} from "./hlir/printer";
 
 const {
     createPrinter,
@@ -563,7 +563,12 @@ class MyVisitor {
                 break;
             case SyntaxKind.VariableStatement:
                 const decl = node['declarationList']['declarations'][0]
-                op.returnNames.add(decl['symbol'])
+                if (decl.symbol) {
+                    op.returnNames.add(new ValueId(decl.symbol.escapedName))
+                } else {
+                    for (const element of decl.name.elements)
+                        op.returnNames.add(new ValueId(element.symbol.escapedName))
+                }
                 break;
             case SyntaxKind.ExpressionStatement:
                 break;
@@ -780,10 +785,8 @@ class MyVisitor {
         }
 
 
-        const bb = new BasicBlock()
-        const rr = new Region()
-        rr.blocks = [bb]
-        op.regions = [rr]
+        const bb = new Block()
+        op.blocks = [bb]
         node.forEachChild((child) => {
             const tmp = this.visit(child)
             if (tmp) bb.operators.push(tmp)
@@ -829,7 +832,7 @@ function compile(): void {
 
     console.log(result)
     console.log("==============")
-    for (const op of result.regions[0].blocks[0].operators) {
+    for (const op of result.blocks[0].operators) {
         console.log(op)
     }
     console.log("==============")
